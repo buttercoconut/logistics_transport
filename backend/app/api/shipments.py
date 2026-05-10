@@ -1,15 +1,16 @@
-# api/shipments.py
-from fastapi import APIRouter, Depends
-from typing import List
-from ..services.shipment_service import create_shipment, list_shipments
-from ..models.shipment import ShipmentCreate, Shipment
+"""
+FastAPI router for shipment endpoints.
+"""
+from fastapi import APIRouter, HTTPException, status
+from app.models.shipment import Shipment
+from app.services.shipment_service import ShipmentService
 
 router = APIRouter()
 
-@router.post("/", response_model=Shipment)
-async def create_shipment_endpoint(shipment: ShipmentCreate):
-    return await create_shipment(shipment)
-
-@router.get("/", response_model=List[Shipment])
-async def list_shipments_endpoint():
-    return await list_shipments()
+@router.post("/", response_model=Shipment, status_code=status.HTTP_201_CREATED)
+async def create_shipment(shipment: Shipment):
+    try:
+        created = ShipmentService.create_shipment(shipment)
+        return created
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

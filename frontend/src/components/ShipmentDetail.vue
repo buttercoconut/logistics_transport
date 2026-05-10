@@ -1,37 +1,39 @@
 <template>
-  <div>
+  <div class="shipment-detail">
     <h2>Shipment Detail</h2>
     <div v-if="shipment">
       <p><strong>ID:</strong> {{ shipment.id }}</p>
       <p><strong>Origin:</strong> {{ shipment.origin }}</p>
       <p><strong>Destination:</strong> {{ shipment.destination }}</p>
       <p><strong>Status:</strong> {{ shipment.status }}</p>
-      <p><strong>Estimated Arrival:</strong> {{ shipment.estimated_arrival }}</p>
+      <p><strong>Estimated Cost:</strong> ${{ shipment.estimated_cost }}</p>
     </div>
-    <div v-else>
-      Loading...
-    </div>
+    <div v-else>Loading...</div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
 import axios from 'axios';
+import { useRoute } from 'vue-router';
 
 const route = useRoute();
 const shipment = ref(null);
 
 const fetchShipment = async () => {
   try {
-    const response = await axios.get(`/api/shipments/${route.params.id}`);
-    shipment.value = response.data;
-  } catch (err) {
-    console.error('Error fetching shipment', err);
+    const res = await axios.get(`/api/shipments/${route.params.id}`);
+    shipment.value = res.data;
+  } catch (e) {
+    console.error('Failed to fetch shipment', e);
   }
 };
 
-onMounted(() => {
-  fetchShipment();
-});
+onMounted(fetchShipment);
 </script>
+
+<style scoped>
+.shipment-detail {
+  padding: 1rem;
+}
+</style>

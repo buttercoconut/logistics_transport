@@ -1,26 +1,26 @@
-# models/shipment.py
-from pydantic import BaseModel, Field
+"""
+Pydantic model for Shipment.
+"""
+from datetime import datetime
 from typing import List, Optional
+from pydantic import BaseModel, Field
 
 class Location(BaseModel):
     latitude: float
     longitude: float
-    timestamp: Optional[str] = None
+    timestamp: datetime
 
-class ShipmentBase(BaseModel):
+class Shipment(BaseModel):
+    id: Optional[int] = Field(None, description="Shipment ID, auto-generated")
     origin: Location
     destination: Location
-    weight_kg: float
-    description: Optional[str] = None
-
-class ShipmentCreate(ShipmentBase):
     carrier_id: int
-
-class Shipment(ShipmentBase):
-    id: int
-    carrier_id: int
-    status: str = Field(default="created")
-    route: List[Location] = Field(default_factory=list)
+    driver_id: Optional[int] = None
+    status: str = Field("created", description="Current status of the shipment")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    route: Optional[List[Location]] = None
+    estimated_cost: Optional[float] = None
 
     class Config:
         orm_mode = True

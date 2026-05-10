@@ -3,5 +3,5 @@
 </template>
 
 <script setup>
-// Root component
+// App root
 </script>
