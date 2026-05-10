@@ -1,26 +1,29 @@
-"""
-Pydantic model for Shipment.
-"""
-from datetime import datetime
-from typing import List, Optional
+# models/shipment.py
 from pydantic import BaseModel, Field
+from typing import List, Optional
+from datetime import datetime
 
 class Location(BaseModel):
     latitude: float
     longitude: float
-    timestamp: datetime
+    timestamp: Optional[datetime] = None
 
-class Shipment(BaseModel):
-    id: Optional[int] = Field(None, description="Shipment ID, auto-generated")
+class ShipmentBase(BaseModel):
     origin: Location
     destination: Location
+    weight_kg: float
+    description: Optional[str] = None
+
+class ShipmentCreate(ShipmentBase):
     carrier_id: int
-    driver_id: Optional[int] = None
-    status: str = Field("created", description="Current status of the shipment")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Shipment(ShipmentBase):
+    id: int
+    carrier_id: int
+    status: str = Field(default="created")
+    created_at: datetime
+    updated_at: datetime
     route: Optional[List[Location]] = None
-    estimated_cost: Optional[float] = None
 
     class Config:
         orm_mode = True

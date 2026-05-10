@@ -1,52 +1,32 @@
 <template>
-  <div class="carrier-form">
-    <h2>Register New Carrier</h2>
-    <form @submit.prevent="submitForm">
+  <div>
+    <h2>Carrier Form</h2>
+    <form @submit.prevent="submit">
       <div>
         <label for="name">Name:</label>
-        <input id="name" v-model="form.name" required />
+        <input id="name" v-model="carrier.name" required />
       </div>
       <div>
         <label for="contact">Contact:</label>
-        <input id="contact" v-model="form.contact" required />
+        <input id="contact" v-model="carrier.contact" required />
       </div>
-      <div>
-        <label for="capacity">Capacity (kg):</label>
-        <input id="capacity" type="number" v-model.number="form.capacity" required />
-      </div>
-      <button type="submit">Register</button>
+      <button type="submit">Save</button>
     </form>
   </div>
 </template>
 
 <script setup>
-import { reactive } from 'vue';
+import { ref } from 'vue';
 import axios from 'axios';
 
-const form = reactive({
-  name: '',
-  contact: '',
-  capacity: 0,
-});
+const carrier = ref({ name: '', contact: '' });
 
-const submitForm = async () => {
+const submit = async () => {
   try {
-    await axios.post('/api/carriers', form);
-    alert('Carrier registered successfully');
-    form.name = '';
-    form.contact = '';
-    form.capacity = 0;
+    await axios.post('http://localhost:8000/carriers', carrier.value);
+    alert('Carrier saved');
   } catch (e) {
-    console.error('Failed to register carrier', e);
+    console.error(e);
   }
 };
 </script>
-
-<style scoped>
-.carrier-form {
-  padding: 1rem;
-}
-form div {
-  margin-bottom: 0.5rem;
-}
-</style>

@@ -3,7 +3,9 @@
     <h2>Shipment List</h2>
     <ul>
       <li v-for="shipment in shipments" :key="shipment.id">
-        {{ shipment.id }} - {{ shipment.origin }} to {{ shipment.destination }}
+        <router-link :to="{ name: 'ShipmentDetail', params: { id: shipment.id } }">
+          {{ shipment.id }} - {{ shipment.origin }} to {{ shipment.destination }}
+        </router-link>
       </li>
     </ul>
   </div>
@@ -17,17 +19,15 @@ const shipments = ref([]);
 
 onMounted(async () => {
   try {
-    const response = await axios.get('/api/shipments');
-    shipments.value = response.data;
-  } catch (error) {
-    console.error('Error fetching shipments:', error);
+    const res = await axios.get('http://localhost:8000/shipments');
+    shipments.value = res.data;
+  } catch (e) {
+    console.error(e);
   }
 });
 </script>
 
 <style scoped>
-ul {
-  list-style-type: none;
-  padding: 0;
-}
+ul { list-style: none; padding: 0; }
+li { margin: 0.5rem 0; }
 </style>

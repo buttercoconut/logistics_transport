@@ -1,84 +1,60 @@
-"""
-Service layer for shipment operations.
-"""
-import requests
+# services/shipment_service.py
+import httpx
 from typing import List
-from datetime import datetime
-from app.models.shipment import Shipment, Location
-from config import settings
+from ..config import settings
+from ..models.shipment import Location, ShipmentCreate, Shipment
 
-class ShipmentService:
-    @staticmethod
-    def calculate_route(origin: Location, destination: Location) -> List[Location]:
-        """Call Google Maps Directions API to get optimal route.
-        Returns a list of Location points along the route.
-        """
-        url = "https://maps.googleapis.com/maps/api/directions/json"
-        params = {
-            "origin": f"{origin.latitude},{origin.longitude}",
-            "destination": f"{destination.latitude},{destination.longitude}",
-            "key": settings.GOOGLE_MAPS_API_KEY,
-            "mode": "driving",
-            "alternatives": "false",
-        }
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-        if data["status"] != "OK":
-            raise ValueError(f"Google Maps API error: {data['status']} - {data.get('error_message')}"
-)
+# Simple in-memory store for demo purposes
+shipments_db = {}
+shipment_id_seq = 1
+
+async def calculate_optimal_route(origin: Location, destination: Location) -> List[Location]:
+    """Call Google Maps Directions API to get optimal route."""
+    url = "https://maps.googleapis.com/maps/api/directions/json"
+    params = {
+        "origin": f"{origin.latitude},{origin.longitude}",
+        "destination": f"{destination.latitude},{destination.longitude}",
+        "key": settings.GOOGLE_MAPS_API_KEY,
+        "mode": "driving",
+    }
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+        if data.get("status") != "OK":
+            raise ValueError("Google Maps API error: " + data.get("status"))
         # Extract polyline points
-        route_points = []
-        for leg in data["routes"][0]["legs"]:
-            for step in leg["steps"]:
-                start_loc = step["start_location"]
-                route_points.append(
-                    Location(
-                        latitude=start_loc["lat"],
-                        longitude=start_loc["lng"],
-                        timestamp=datetime.utcnow(),
-                    )
-                )
-        return route_points
+        steps = data["routes"][0]["legs"][0]["steps"]
+        route = []
+        for step in steps:
+            start_loc = step["start_location"]
+            route.append(Location(latitude=start_loc["lat"], longitude=start_loc["lng"], timestamp=None))
+        # Add destination
+        dest = data["routes"][0]["legs"][0]["end_location"]
+        route.append(Location(latitude=dest["lat"], longitude=dest["lng"], timestamp=None))
+        return route
 
-    @staticmethod
-    def estimate_cost(route: List[Location]) -> float:
-        """Simple cost estimation: $0.5 per km.
-        For demo purposes, we calculate straight-line distance.
-        """
-        if not route:
-            return 0.0
-        # Haversine formula
-        from math import radians, cos, sin, asin, sqrt
+async def create_shipment(shipment_in: ShipmentCreate) -> Shipment:
+    global shipment_id_seq
+    route = await calculate_optimal_route(shipment_in.origin, shipment_in.destination)
+    shipment = Shipment(
+        id=shipment_id_seq,
+        origin=shipment_in.origin,
+        destination=shipment_in.destination,
+        weight_kg=shipment_in.weight_kg,
+        description=shipment_in.description,
+        carrier_id=shipment_in.carrier_id,
+        status="created",
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+        route=route,
+    )
+    shipments_db[shipment_id_seq] = shipment
+    shipment_id_seq += 1
+    return shipment
 
-        def haversine(lat1, lon1, lat2, lon2):
-            R = 6371  # Earth radius in km
-            dlat = radians(lat2 - lat1)
-            dlon = radians(lon2 - lon1)
-            a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
-            c = 2 * asin(sqrt(a))
-            return R * c
+async def get_shipment(shipment_id: int) -> Shipment:
+    return shipments_db.get(shipment_id)
 
-        total_distance = 0.0
-        for i in range(1, len(route)):
-            total_distance += haversine(
-                route[i - 1].latitude,
-                route[i - 1].longitude,
-                route[i].latitude,
-                route[i].longitude,
-            )
-        return round(total_distance * 0.5, 2)
-
-    @staticmethod
-    def create_shipment(shipment_data: Shipment) -> Shipment:
-        """Create a shipment, calculate route and cost.
-        In a real system, this would persist to DB.
-        """
-        route = ShipmentService.calculate_route(shipment_data.origin, shipment_data.destination)
-        cost = ShipmentService.estimate_cost(route)
-        shipment_data.route = route
-        shipment_data.estimated_cost = cost
-        shipment_data.status = "scheduled"
-        shipment_data.updated_at = datetime.utcnow()
-        # TODO: Persist to database
-        return shipment_data
+async def list_shipments() -> List[Shipment]:
+    return list(shipments_db.values())

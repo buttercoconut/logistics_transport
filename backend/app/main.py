@@ -2,13 +2,13 @@
 from fastapi import FastAPI
 from .api import shipments, carriers, drivers, locations
 
-app = FastAPI(title="Logistics Transport API")
+app = FastAPI(title="Logistics Transport API", version="1.0.0")
 
-app.include_router(shipments.router, prefix="/shipments", tags=["shipments"])
-app.include_router(carriers.router, prefix="/carriers", tags=["carriers"])
-app.include_router(drivers.router, prefix="/drivers", tags=["drivers"])
-app.include_router(locations.router, prefix="/locations", tags=["locations"])
+app.include_router(shipments.router)
+app.include_router(carriers.router)
+app.include_router(drivers.router)
+app.include_router(locations.router)
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to Logistics Transport API"}
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}

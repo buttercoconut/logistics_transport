@@ -1,20 +1,10 @@
-"""
-Configuration settings using Pydantic BaseSettings.
-"""
-from pydantic import BaseSettings, Field
+# config.py
+import os
+from pydantic import BaseSettings
 
 class Settings(BaseSettings):
-    # Database
-    DATABASE_URL: str = Field(..., env="DATABASE_URL")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5432/logistics_db")
+    GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY", "YOUR_GOOGLE_MAPS_API_KEY")
+    # Add other settings as needed
 
-    # Google Maps API Key
-    GOOGLE_MAPS_API_KEY: str = Field(..., env="GOOGLE_MAPS_API_KEY")
-
-    # Other settings can be added here
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-
-# Instantiate settings
 settings = Settings()
